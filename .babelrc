@@ -1,0 +1,14 @@
+{
+  "presets": ["@babel/preset-env"],
+  "plugins": [
+    [
+      "module-resolver",
+      {
+        "extensions": [".js", ".json"],
+        "alias": {
+          "@config": "./config"
+        }
+      }
+    ]
+  ]
+}
