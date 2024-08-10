@@ -4,4 +4,5 @@ export const keys = {
   googleClientID: process.env.GOOGLE_CLIENT_ID,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
   secretKey: process.env.SECRETKEY,
+  clientUrl: process.env.CLIENT_URL,
 };

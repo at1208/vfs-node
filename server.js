@@ -1,20 +1,29 @@
-// server.js
 import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
 import cookieSession from "cookie-session";
 import cors from "cors";
 import passport from "passport";
+import morgan from "morgan";
 import { keys } from "./config/keys.js";
 import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
+import applicationRoutes from "./routes/applicationRoutes.js";
+import { ensureAuth } from "./middlewares/authMiddlewares.js";
 import "./services/passport.js";
 
 const app = express();
 
+// Morgan middleware for logging
+app.use(morgan("dev"));
+
+// Body parser middleware
+app.use(express.json()); // for parsing application/json
+app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+
 app.use(
   cors({
-    origin: "http://localhost:3000", // Allow requests from this origin
+    origin: keys.clientUrl, // Allow requests from this origin
     credentials: true, // Allow cookies to be sent with requests
   })
 );
@@ -32,14 +41,22 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Connect to MongoDB
-mongoose.connect(keys.mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose
+  .connect(keys.mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Connected to DB");
+  })
+  .catch((err) => {
+    console.log(`DB error: ${err}`);
+  });
 
 // Set up routes
 app.use("/api", authRoutes);
 app.use("/api", sessionRoutes);
+app.use("/api", ensureAuth, applicationRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
