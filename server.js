@@ -9,6 +9,7 @@ import { keys } from "./config/keys.js";
 import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
 import { ensureAuth } from "./middlewares/authMiddlewares.js";
 import "./services/passport.js";
 
@@ -57,6 +58,7 @@ mongoose
 app.use("/api", authRoutes);
 app.use("/api", sessionRoutes);
 app.use("/api", ensureAuth, applicationRoutes);
+app.use("/api", ensureAuth, bookingRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000;

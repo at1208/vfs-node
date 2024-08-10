@@ -1,5 +1,6 @@
 import { Application } from "../models/ApplicationModel.js";
 import { validationResult } from "express-validator";
+import { Booking } from "../models/BookingModel.js";
 
 // Create a new application
 export const createApplication = async (req, res) => {
@@ -30,6 +31,8 @@ export const getApplications = async (req, res) => {
     const { id, ...query } = req.query;
 
     let applications;
+    let bookings;
+    let response;
 
     if (id) {
       applications = await Application.findById(id);
@@ -40,13 +43,47 @@ export const getApplications = async (req, res) => {
           data: [],
         });
       }
-      return res
-        .status(200)
-        .json({ status: true, errors: [], data: applications });
+
+      // Fetch bookings related to this specific application
+      bookings = await Booking.find({ application_id: id }).select("slot");
+      // Combine application data with booking slots
+      response = {
+        ...applications.toObject(),
+        bookings: bookings.map((b) => b.slot),
+      };
+
+      return res.status(200).json({
+        status: true,
+        errors: [],
+        data: response,
+      });
     }
 
     applications = await Application.find(query);
-    res.status(200).json({ status: true, errors: [], data: applications });
+    const applicationIds = applications.map((app) => app._id);
+
+    bookings = await Booking.find({
+      application_id: { $in: applicationIds },
+    }).select("application_id slot");
+    const bookingsByApplicationId = bookings.reduce((acc, booking) => {
+      if (!acc[booking.application_id]) {
+        acc[booking.application_id] = [];
+      }
+      acc[booking.application_id].push(booking.slot);
+      return acc;
+    }, {});
+
+    // Attach slots to each application
+    response = applications.map((app) => ({
+      ...app.toObject(),
+      slot: bookingsByApplicationId[app._id]?.[0] || null,
+    }));
+
+    res.status(200).json({
+      status: true,
+      errors: [],
+      data: response,
+    });
   } catch (error) {
     res.status(400).json({
       status: false,

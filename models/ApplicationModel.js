@@ -27,6 +27,21 @@ const applicationSchema = new Schema(
       },
     },
     email: { type: String, required: true },
+    payable: {
+      amount: {
+        type: Number,
+        default: 300,
+      },
+      currency: {
+        type: String,
+        default: "$",
+      },
+    },
+    mode_of_payment: {
+      type: String,
+      enum: ["Online", "Cash"],
+      required: true,
+    },
   },
   {
     timestamps: true,
