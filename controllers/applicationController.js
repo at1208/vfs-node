@@ -13,13 +13,26 @@ export const createApplication = async (req, res) => {
   }
 
   try {
-    const newApplication = new Application(req.body);
-    const savedApplication = await newApplication.save();
-    res.status(200).json({ status: true, errors: [], data: savedApplication });
+    const applications = req.body; // Expecting an array of application objects
+
+    if (!Array.isArray(applications)) {
+      return res
+        .status(400)
+        .json({ status: false, errors: ["Invalid data format"], data: [] });
+    }
+
+    // Create a bulk insert
+    const savedApplications = await Application.insertMany(applications, {
+      rawResult: true,
+    });
+
+    res.status(200).json({ status: true, errors: [], data: savedApplications });
   } catch (error) {
     res.status(400).json({
       status: false,
-      errors: Object.keys(error.errors).map((err) => error.errors[err]),
+      errors: Object.keys(error.errors || {}).map(
+        (err) => error.errors[err].message
+      ),
       data: [],
     });
   }
@@ -28,12 +41,13 @@ export const createApplication = async (req, res) => {
 // Get applications with optional query filters or by ID
 export const getApplications = async (req, res) => {
   try {
-    const { id, ...query } = req.query;
+    const { id, search, ...query } = req.query;
 
     let applications;
     let bookings;
     let response;
 
+    // If an id is provided, fetch the specific application
     if (id) {
       applications = await Application.findById(id);
       if (!applications) {
@@ -59,12 +73,37 @@ export const getApplications = async (req, res) => {
       });
     }
 
-    applications = await Application.find(query);
+    // Build the search query if search parameter is provided
+    let searchQuery = {};
+    if (search) {
+      searchQuery = {
+        $or: [
+          { first_name: { $regex: search, $options: "i" } },
+          { last_name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { nationality: { $regex: search, $options: "i" } },
+          { visa_center: { $regex: search, $options: "i" } },
+          { visa_category: { $regex: search, $options: "i" } },
+          { passport_number: { $regex: search, $options: "i" } },
+          { gender: { $regex: search, $options: "i" } },
+          { migris_number: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    // Combine the search query with other query parameters
+    const combinedQuery = { ...query, ...searchQuery };
+
+    // Fetch applications based on the combined query
+    applications = await Application.find(combinedQuery);
     const applicationIds = applications.map((app) => app._id);
 
+    // Fetch bookings for the retrieved applications
     bookings = await Booking.find({
       application_id: { $in: applicationIds },
     }).select("application_id slot");
+
+    // Group bookings by application_id
     const bookingsByApplicationId = bookings.reduce((acc, booking) => {
       if (!acc[booking.application_id]) {
         acc[booking.application_id] = [];
