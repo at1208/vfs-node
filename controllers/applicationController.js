@@ -21,18 +21,33 @@ export const createApplication = async (req, res) => {
         .json({ status: false, errors: ["Invalid data format"], data: [] });
     }
 
-    // Create a bulk insert
-    const savedApplications = await Application.insertMany(applications, {
-      rawResult: true,
-    });
+    const successfulApplications = [];
+    const applicationErrors = [];
 
-    res.status(200).json({ status: true, errors: [], data: savedApplications });
+    // Iterate over each application and try to save it individually
+    for (const application of applications) {
+      try {
+        const savedApplication = await new Application(application).save();
+        successfulApplications.push(savedApplication);
+      } catch (error) {
+        applicationErrors.push({
+          application,
+          error: Object.keys(error.errors || {}).map(
+            (err) => error.errors[err].message
+          ),
+        });
+      }
+    }
+
+    res.status(200).json({
+      status: true,
+      errors: applicationErrors,
+      data: successfulApplications,
+    });
   } catch (error) {
-    res.status(400).json({
+    res.status(500).json({
       status: false,
-      errors: Object.keys(error.errors || {}).map(
-        (err) => error.errors[err].message
-      ),
+      errors: ["Internal server error"],
       data: [],
     });
   }
