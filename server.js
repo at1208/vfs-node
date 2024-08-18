@@ -25,13 +25,22 @@ app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 // CORS middleware
+const allowedOrigins = [keys.clientUrl, "http://localhost:3000"];
+
 app.use(
   cors({
-    origin: keys.clientUrl, // Allow requests from this origin
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true, // Allow cookies to be sent with requests
   })
 );
-
 // Cookie session middleware
 app.use(
   cookieSession({
