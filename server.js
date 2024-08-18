@@ -10,7 +10,9 @@ import authRoutes from "./routes/authRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
-import { ensureAuth } from "./middlewares/authMiddlewares.js";
+import visaRoutes from "./routes/visaRoutes.js";
+import { authenticate, ensureAuth } from "./middlewares/authMiddlewares.js";
+
 import "./services/passport.js";
 
 const app = express();
@@ -22,6 +24,7 @@ app.use(morgan("dev"));
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
+// CORS middleware
 app.use(
   cors({
     origin: keys.clientUrl, // Allow requests from this origin
@@ -54,7 +57,8 @@ mongoose
     console.log(`DB error: ${err}`);
   });
 
-// Set up routes
+// Set up protected routes
+app.use("/api", visaRoutes);
 app.use("/api", authRoutes);
 app.use("/api", sessionRoutes);
 app.use("/api", ensureAuth, applicationRoutes);
