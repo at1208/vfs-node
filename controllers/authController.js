@@ -15,7 +15,7 @@ export const googleAuthCallbackController = (req, res, next) => {
     if (!user) return res.redirect("/");
     req.logIn(user, (err) => {
       if (err) return next(err);
-      res.redirect("http://localhost:3000/dashboard");
+      res.redirect(`${process.env.CLIENT_URL}/dashboard`);
     });
   })(req, res, next);
 };
@@ -23,5 +23,5 @@ export const googleAuthCallbackController = (req, res, next) => {
 // Logs out the user and redirects to the home page
 export const logoutController = (req, res) => {
   req.logout();
-  res.redirect("http://localhost:3000/");
+  res.redirect(`${process.env.CLIENT_URL}`);
 };
